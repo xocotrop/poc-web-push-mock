@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Usando push notification com Node - Igor</title>
+</head>
+<body>
+    <h1>Push Notification</h1>
+    <div>
+        Mensagem: <input type="text" id="text">
+        <button id="btn">Enviar</button>
+    </div>
+    <script src="client.js"></script>
+    <script>
+        document.getElementById("btn").onclick = function(e)
+        {
+            var texto = document.getElementById('text').value;
+            send(texto);
+
+        };
+    </script>
+</body>
+</html>
