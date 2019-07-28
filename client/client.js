@@ -1,15 +1,38 @@
 const publicVapIdKey = 'BEBja5FklXnAzuOGoExG-FXevC3lMkvtvOjIDISSQ3cKl5yKqlMCp4x4N0fnYmlKH2-peZC5cXBR00Xb4fpnf2w';
 
-if('serviceWorker' in navigator)
-{
-    send().catch(err => console.error(err));
-}
-
 var register = null;
+var isPushEnabled = false;
+window.addEventListener('load', async () => {
+    var pushButton = document.querySelector('.js-push-button');
+    pushButton.addEventListener('click', async function() {
+        if(isPushEnabled)
+        {
+            await unsubscribe();
+        }
+        else {
+            await subscribe();
+        }
+    });
+    if('serviceWorker' in navigator)
+    {
+        register = await navigator.serviceWorker.register('/worker.js', {scope : '/'});
+        initialiseState();
+        // send().catch(err => console.error(err));
+    }
+    else {
+        console.warn('Sem suporte a push notifications');
+    }
+});
 
-async function registerBrownser()
+async function registerBrowser()
 {
+    if(!register)
+    {
+        register = await navigator.serviceWorker.getRegistration()
+        .then((e) => {
 
+        });
+    }
 }
 
 
