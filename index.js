@@ -2,30 +2,47 @@ const express = require('express');
 const webpush = require('web-push');
 const bodyParser = require('body-parser');
 const path = require('path');
+const mongoclient = require('mongodb');
+
+const mongoUri = 'x';
 
 const app = express();
 app.use(express.static(path.join(__dirname, "client")));
 app.use(bodyParser.json());
-const publicVapIdKey = 'BEBja5FklXnAzuOGoExG-FXevC3lMkvtvOjIDISSQ3cKl5yKqlMCp4x4N0fnYmlKH2-peZC5cXBR00Xb4fpnf2w';
-const secretVapIdKey = 'aqAWyW4b3Vb_xzQVNM-EaN_yuyh569OJd1qYIpZWJEA';
+const publicVapIdKey = 'x';
+const secretVapIdKey = 'x';
 
-webpush.setVapidDetails('mailto:igor.sms@gmail.com', publicVapIdKey, secretVapIdKey);
+webpush.setVapidDetails('x', publicVapIdKey, secretVapIdKey);
+var db = null;
+mongoclient.connect(mongoUri, { useNewUrlParser : true }, (err, client)=>{
+    if(err) return console.error(err);
 
-var idInDB = '[{"endpoint":"https://fcm.googleapis.com/fcm/send/esOQsKL_aw4:APA91bHwPdkmYaT9nCGSmSQmvciixfG1bm9eZfPCu1B7D_uN2SB-bL8kbOPmSuaxJqQJTohF1b2dx3sso78iMAxBmcXB6WUI6SQTBLejlco_NwACTpf4aiY35GV8oqdvoXHaI8IjNqk5","expirationTime":null,"keys":{"p256dh":"BO2zZsP4IliQ3eg35LBsL7LuIFe7RrDmxNs3IMt686TGRccoPsqjuTUV61UdpHXwLCE0ppnIbREd1h4wqKaLRwI","auth":"0gcQiBrYu7onySenVt4vwQ"}},{"endpoint":"https://fcm.googleapis.com/fcm/send/c7iVPCFspZ8:APA91bFgHQsfTXpuQRnxs_MGVH2V2KrkhVaNGk9bbPgGFIKzoKXuQWtcovw3z1QvmSBOAQynUZQkZQAxZJKOjNF7HxrSdn8YkMM-K6RfRGlBv_2qPzDqbOgzl_ocFSqOLh9IEAXeabnw","expirationTime":null,"keys":{"p256dh":"BFiCxmgTSmhoEtlRbKcfdbBfIaGgcJDFxCjvPoNhptG51HbfL86TExHMD6MtjkSuizt1MixefKQnITRr9SxAnwg","auth":"UVgJPJdyHNwKTFQl7CoAVg"}}]';
+    db = client.db('Cluster0');
+});
 
-var ids = [];
+// var ids = [];
 
-ids = eval('('+idInDB+')');
+// ids = eval('('+idInDB+')');
 
 app.get('/sendmessages', (req,resp) => {
     var payload = {
         title : 'Titulo',
-        body : 'MEnsagem'
+        body : 'Mensagem'
     };
-    for(var e in ids)
-        webpush.sendNotification(ids[e], JSON.stringify(payload)).catch((error) => {
-            console.error(error);
-        });
+    db.collection('Clients').find().toArray((err, result) => {
+        if(err)
+        {
+            resp.status(400).json({ error : err});
+            return console.error(err);
+        }
+        for(var e in result)
+        {
+            webpush.sendNotification(result[e], JSON.stringify(payload))
+            .catch((error) => {
+                console.error(error);
+            });
+        }
+    });
 
     resp.status(200).json({});
 });
@@ -33,18 +50,40 @@ app.get('/sendmessages', (req,resp) => {
 app.post('/register', (req,resp) => {
     const fcm = req.body;
     var found = false;
-    for(var i in ids)
-    {
-        if(ids[i].endpoint.indexOf(fcm.endpoint) > -1)
-        {
-            found = true;
-        }
-    }
-    if(!found)
-    {
-        ids.push(fcm);
-    }
-    resp.status(200).json({});
+    // for(var i in ids)
+    // {
+    //     if(ids[i].endpoint.indexOf(fcm.endpoint) > -1)
+    //     {
+    //         found = true;
+    //     }
+    // }
+    // if(!found)
+    // {
+        db.collection('Clients').find({ endpoint : fcm.endpoint}).toArray((err, results) => {
+
+            if(err)
+            {
+                resp.status(400).json({error : err});
+                return console.log(err);
+            }
+
+            if(results.length == 0)
+            {
+                db.collection('Clients').insertOne(fcm, (err, result) => {
+                    if(err){
+                        resp.status(400).json({error : err})
+                        return console.error(err);                
+                    } 
+                });
+                resp.status(200).json({});
+            }
+            else {
+                resp.status(200).json({});
+            }
+        });
+        
+    // }
+    // resp.status(200).json({});
 });
 
 app.post('/subscribe', (req,resp) => {
